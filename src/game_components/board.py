@@ -63,7 +63,8 @@ class Board:
         coin_row, coin_column = move
         if self._on_board_limits(move):
             if coin_row < ROWS-1:
-                return self.board[coin_row+1][coin_column] != EMPTY_SPACE and self.board[coin_row][coin_column] == EMPTY_SPACE
+                return self.board[coin_row+1][coin_column] != EMPTY_SPACE and \
+                       self.board[coin_row][coin_column] == EMPTY_SPACE
             else:
                 return self.board[coin_row][coin_column] == EMPTY_SPACE
         else:

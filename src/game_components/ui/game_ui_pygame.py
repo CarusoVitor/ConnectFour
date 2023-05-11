@@ -12,7 +12,8 @@ from typing import Tuple
 class GameUI:
     def __init__(self):
         pygame.init()
-        self.board_surface_img = pygame.image.load("../imgs/Connect4Board.png")
+        self.screen_img = pygame.image.load("../imgs/Connect4Board.png")
+        self.screen = None
 
     def play(self, player_types: Tuple[str, str] = None, delay=0):
         if player_types is None:
@@ -23,11 +24,17 @@ class GameUI:
         player_turn_type = player_types[player_turn]
         move = (0, 0)
 
-        board_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        board_surface.fill("White")
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        screen.fill("White")
+        screen.blit(self.screen_img, (0, 0))
 
-        info_surface = pygame.rect.Rect(0, SCREEN_HEIGHT-INFO_HEIGTH, INFO_WIDTH, INFO_HEIGTH)
-        pygame.draw.rect(board_surface, LIGHT_BLUE, info_surface)
+        info_surface = pygame.rect.Rect(0, SCREEN_HEIGHT-INFO_HEIGHT, INFO_WIDTH, INFO_HEIGHT)
+        pygame.draw.rect(screen, LIGHT_BLUE, info_surface)
+        font = pygame.font.SysFont(FONT, FONT_SIZE)
+        turn_text = font.render("Turno", False, "Black")
+
+        screen.blit(turn_text, TURN_TEXT_COORDS)
+        pygame.draw.circle(screen, COLOR_PLAYERS[player_turn], PLAYER_TURN_COIN_COORDS, CIRCLE_RADIUS + 2)
 
         pygame.display.set_caption("Connect 4")
         clock = pygame.time.Clock()
@@ -46,7 +53,7 @@ class GameUI:
             move_status = False
 
             if player_turn_type == "Human":
-                if mouse_press and board_surface.get_at(pygame.mouse.get_pos()) == WHITE:
+                if mouse_press and screen.get_at(pygame.mouse.get_pos()) == WHITE:
                     move = HumanPlayer.make_move()
                     move_status = board.add_to_board(move, player_turn)
             else:
@@ -54,50 +61,46 @@ class GameUI:
                 move_status = board.add_to_board(move, player_turn)
 
             if move_status:
-                rect = self.get_rect_from_position(move)
-                pygame.draw.rect(board_surface, COLOR_PLAYERS[player_turn], rect)
+                center = self.get_circle_center_from_position(move)
+                pygame.draw.circle(screen, COLOR_PLAYERS[player_turn], center, CIRCLE_RADIUS+2)
                 if board.check_win(move, player_turn):
                     break
                 player_turn ^= 1
                 player_turn_type = player_types[player_turn]
                 sleep(delay)
+                pygame.draw.circle(screen, COLOR_PLAYERS[player_turn], PLAYER_TURN_COIN_COORDS, CIRCLE_RADIUS + 2)
 
-            board_surface.blit(self.board_surface_img, (0, 0))
+            screen.blit(self.screen_img, (0, 0))
             pygame.display.update()
-            clock.tick(60)
+            clock.tick(FPS)
 
         if board.check_win(move, player_turn):
             if player_turn == PLAYER_ONE:
-                winner_str = f"O jogador vermelho foi vencedor!"
+                final_str = f"O jogador vermelho foi vencedor!"
+
             else:
-                winner_str = f"O jogador amarelo foi vencedor!"
+                final_str = f"O jogador amarelo foi vencedor!"
+            final_color = COLOR_PLAYERS[player_turn]
 
-            font = pygame.font.SysFont(FONT, FONT_SIZE)
-            winner_surface = font.render(winner_str, False, COLOR_PLAYERS[player_turn])
-
-            board_surface.blit(self.board_surface_img, (0, 0))
-            board_surface.blit(winner_surface, DISPLAY_WINNER_TEXT_COORDS)
-
-            pygame.display.update()
-            sleep(3)
         else:
-            print("Empate!")
+            final_str = "Empate!"
+            final_color = "Black"
 
-    def get_rect_from_position(self, position):
-        """Gets the rectangle that will be used to paint the circle corresponding to the position of the board"""
+        winner_text = font.render(final_str, False, final_color)
+
+        screen.blit(self.screen_img, (0, 0))
+        screen.blit(winner_text, WINNER_TEXT_COORDS)
+
+        pygame.display.update()
+        sleep(3)
+
+    def get_circle_center_from_position(self, position):
+        """Gets the center coordinates of the circle corresponding to the position clicked"""
         pos_row, pos_column = position
-        top_left_rect_coordinates = (
-            HORIZONTAL_OFFSET + HORIZONTAL_DISTANCE_CIRCLES * pos_column,
-            VERTICAL_OFFSET + VERTICAL_DISTANCE_CIRCLES * pos_row
-        )
-        width_rect = CIRCLE_DIAMATER + 1
-        height_rect = CIRCLE_DIAMATER + 1
-        rect = pygame.rect.Rect(
-            top_left_rect_coordinates[0],
-            top_left_rect_coordinates[1],
-            width_rect,
-            height_rect
-        )
-        return rect
 
+        starting_center_x, starting_center_y = FIRST_CIRCLE_CENTER
 
+        center = (starting_center_x + HORIZONTAL_DISTANCE_CIRCLES * pos_column,
+                  starting_center_y + VERTICAL_DISTANCE_CIRCLES * pos_row)
+
+        return center
